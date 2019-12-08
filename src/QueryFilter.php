@@ -3,7 +3,7 @@
 namespace Core\Filter;
 
 use Illuminate\Database\Eloquent\Builder;
-use Core\Filtering\Filterable;
+use Core\Filter\Filterable;
 use Closure;
 use Exception;
 
@@ -13,7 +13,7 @@ abstract class QueryFilter implements Filterable
 
 	/**
 	 * Input data.
-	 * @var Core\Filtering\Input
+	 * @var Core\Filter\Input
 	 */
 	protected $filters;
 
@@ -71,7 +71,7 @@ abstract class QueryFilter implements Filterable
 	 * Add custom variables.
 	 * @param  mixed $key   
 	 * @param  mixed $value 
-	 * @return \Core\Filtering\Filterable
+	 * @return \Core\Filter\Filterable
 	 */
 	public function with($key, $value = null)
 	{
