@@ -35,11 +35,24 @@ abstract class QueryFilter implements Filterable
 	protected $applyed = [];
 
 	/**
+	 * Minimal pagination lenght.
+	 * @var integer
+	 */
+	public $min_items = 1;
+
+	/**
+	 * Maximum pagination length.
+	 * @var integer
+	 */
+	public $max_items = 100;
+
+	/**
 	 * Filters that always applied. Contains key and default value.
 	 * @var array
 	 */
 	protected $always_apply = [
 		'order_by' => 'created_at',
+		'limit' => 15
 	];
 
 
@@ -125,16 +138,19 @@ abstract class QueryFilter implements Filterable
 
 	/**
      * Paginate the given query.
-     * @param  int  $perPage
+     * @param  int  $per_page
      * @param  array  $columns
-     * @param  string  $pageName
+     * @param  string  $page_name
      * @param  int|null  $page
      * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
      * @throws \InvalidArgumentException
      */
-	public function paginate($perPage = null, $columns = ['*'], $pageName = 'page', $page = null)
+	public function paginate($per_page = null, $columns = ['*'], $page_name = 'page', $page = null)
 	{
-		return $this->query->paginate($perPage, $columns, $pageName, $page);
+		if (!$per_page) {
+			$per_page = $this->input->getItemLimit('limit', 15, $this->min_items, $this->max_items);
+		} 
+		return $this->query->paginate($per_page, $columns, $page_name, $page);
 	}
 
 

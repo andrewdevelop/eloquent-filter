@@ -168,6 +168,22 @@ class Input implements IteratorAggregate, ArrayAccess, JsonSerializable
         }
     }
 
+    
+    /**
+     * Get pagination items per page.
+     * @param  string  $key       
+     * @param  integer $limit     
+     * @param  integer $min_items 
+     * @param  integer $max_items 
+     * @return integer
+     */
+    public function getItemLimit($key = 'limit', $limit = 15, $min_items = 1, $max_items = 100)
+    {
+        $per_page = $this->get($key, $limit);
+        $per_page = max(min($per_page, $max_items), $min_items);
+        return $per_page;
+    }
+
 
     /**
      * Get the keys of the collection input.
