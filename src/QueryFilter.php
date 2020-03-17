@@ -15,7 +15,7 @@ abstract class QueryFilter implements Filterable
 	 * Input data.
 	 * @var Core\Filter\Input
 	 */
-	protected $filters;
+	protected $input;
 
 	/**
 	 * Query builder instance.
