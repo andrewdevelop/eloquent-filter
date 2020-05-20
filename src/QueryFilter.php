@@ -132,7 +132,7 @@ abstract class QueryFilter implements Filterable
      */
 	public function get($columns = ['*'])
 	{
-		return $this->query->get($column);
+		return $this->query->get($columns);
 	}
 
 
