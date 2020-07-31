@@ -5,14 +5,14 @@ namespace Core\Filter;
 interface Filterable
 {
 	/**
-	 * Get list of applyable filters
+	 * Get list of applicable filters.
 	 * @return array
 	 */
 	public function filters();
 
 	/**
 	 * Apply all existing filter methods.
-	 * @return Core\Filtering\Filterable
+	 * @return Filterable
 	 */
 	public function apply();
 }

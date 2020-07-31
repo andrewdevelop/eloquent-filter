@@ -1,265 +1,257 @@
-<?php 
+<?php
 
 namespace Core\Filter;
 
-use Illuminate\Database\Eloquent\Builder;
-use Core\Filter\Filterable;
 use Closure;
 use Exception;
-
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\Request;
+use InvalidArgumentException;
 
 abstract class QueryFilter implements Filterable
 {
 
-	/**
-	 * Input data.
-	 * @var Core\Filter\Input
-	 */
-	protected $input;
+    /**
+     * Minimal pagination length.
+     * @var integer
+     */
+    public $min_items = 1;
 
-	/**
-	 * Query builder instance.
-	 * @var \Illuminate\Database\Eloquent\Builder
-	 */
-	protected $query;
+    /**
+     * Maximum pagination length.
+     * @var integer
+     */
+    public $max_items = 100;
 
-	/**
-	 * Custom variables.
-	 * @var array
-	 */
-	protected $vars = [];
+    /**
+     * Input data.
+     * @var Input
+     */
+    protected $input;
 
-	/**
-	 * Debug only
-	 */
-	protected $applyed = [];
+    /**
+     * Query builder instance.
+     * @var Builder
+     */
+    protected $query;
 
-	/**
-	 * Minimal pagination lenght.
-	 * @var integer
-	 */
-	public $min_items = 1;
+    /**
+     * Custom variables.
+     * @var array
+     */
+    protected $vars = [];
 
-	/**
-	 * Maximum pagination length.
-	 * @var integer
-	 */
-	public $max_items = 100;
+    /**
+     * Debug only.
+     * @var array
+     */
+    protected $applied = [];
 
-	/**
-	 * Filters that always applied. Contains key and default value.
-	 * @var array
-	 */
-	protected $always_apply = [
-		'order_by' => 'created_at',
-		'limit' => 15
-	];
-
+    /**
+     * Filters that always applied. Contains key and default value.
+     * @var array
+     */
+    protected $always_apply = [
+        'order_by' => 'created_at',
+        'limit' => 15
+    ];
 
     /**
      * Set the query being sent through the filter.
-     * @param  \Illuminate\Database\Eloquent\Builder $query
-     * @return $this
+     * @param Builder $query
+     * @return QueryFilter
      */
     public function send(Builder $query)
     {
         $this->query = $query;
-
         return $this;
     }
 
     /**
      * Set the array of filters.
-     * @param  array|mixed  $filters
-     * @return $this
+     * @param array|iterable|Request $filters
+     * @return QueryFilter
      */
-    public function through($filters)
+    public function through($filters = [])
     {
         $this->input = new Input($filters);
-
         return $this;
     }
 
-	/**
-	 * Add custom variables.
-	 * @param  mixed $key   
-	 * @param  mixed $value 
-	 * @return \Core\Filter\Filterable
-	 */
-	public function with($key, $value = null)
-	{
-		if (is_array($key)) {
-			foreach ($key as $k => $v) {
-				$this->pushVariable($k, $v);
-			}
-		} else {
-			$this->pushVariable($key, $value);
-		}
-
-		return $this;
-	}
-
-
-
-	/**
-	 * Apply all existing filter methods.
-	 * @return Illuminate\Database\Eloquent\Builder
-	 */
-	public function apply()
-	{
-		foreach ($this->filters() as $filter_name => $value_or_default) {
-			$this->applyFilter($filter_name, $value_or_default);
-		}
-
-		return $this;
-	}
-
-
-	/**
-	 * Return the modified query builder instance.
-	 * @return \Illuminate\Database\Eloquent\Builder
-	 */
-	public function query()
-	{
-		return $this->query;
-	}
-
-
-	/**
-     * Execute the query as a "select" statement.
-     * @param  array  $columns
-     * @return \Illuminate\Database\Eloquent\Collection|static[]
+    /**
+     * Add custom variables.
+     * @param mixed $key
+     * @param mixed $value
+     * @return QueryFilter
+     * @throws Exception
      */
-	public function get($columns = ['*'])
-	{
-		return $this->query->get($column);
-	}
+    public function with($key, $value = null)
+    {
+        if (is_array($key)) {
+            foreach ($key as $k => $v) {
+                $this->pushVariable($k, $v);
+            }
+        } else {
+            $this->pushVariable($key, $value);
+        }
+        return $this;
+    }
 
-
-	/**
-     * Paginate the given query.
-     * @param  int  $per_page
-     * @param  array  $columns
-     * @param  string  $page_name
-     * @param  int|null  $page
-     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
-     * @throws \InvalidArgumentException
+    /**
+     * Apply all existing filter methods.
+     * @return QueryFilter
      */
-	public function paginate($per_page = null, $columns = ['*'], $page_name = 'page', $page = null)
-	{
-		if (!$per_page) {
-			$per_page = $this->input->getItemLimit('limit', 15, $this->min_items, $this->max_items);
-		} 
-		return $this->query->paginate($per_page, $columns, $page_name, $page);
-	}
-
+    public function apply()
+    {
+        foreach ($this->filters() as $filter_name => $value_or_default) {
+            $this->applyFilter($filter_name, $value_or_default);
+        }
+        return $this;
+    }
 
     /**
      * Run a final destination callback.
-     * @param  \Closure  $destination
+     * @param Closure $destination
      * @return mixed
      */
     public function then(Closure $destination)
     {
         call_user_func_array($destination, [$this->query]);
-
         return $this;
     }
 
-
-	/**
-	 * Get list of applyable filters
-	 * @return array
-	 */
-	public function filters()
-	{
-		$applyable_always = $this->always_apply;
-		$applyable_from_input = $this->input->all();
-
-		return array_merge($applyable_always, $applyable_from_input);
-	}
-
-
-	/**
-	 * Apply single filter.
-	 * @param  string $name
-	 * @param  mixed $value 
-	 * @return void
-	 */
-	protected function applyFilter($name, $value = null)
-	{
-		$method_name = $this->resolveFilterMethod($name);
-		if ($this->methodIsApplyable($method_name)) {
-			$this->applyMethod($method_name, $value, $name);
-		}
-	}
-
+    /**
+     * Return the modified query builder instance.
+     * @return Builder
+     */
+    public function query()
+    {
+        return $this->query;
+    }
 
     /**
-     * Determine method is applyable.
-     * @param  string $method
+     * Execute the query as a "select" statement.
+     * @param array $columns
+     * @return Collection|static[]
+     */
+    public function get($columns = ['*'])
+    {
+        return $this->query->get($columns);
+    }
+
+    /**
+     * Paginate the given query.
+     * @param int $per_page
+     * @param array $columns
+     * @param string $page_name
+     * @param int|null $page
+     * @return LengthAwarePaginator
+     * @throws InvalidArgumentException
+     */
+    public function paginate($per_page = null, $columns = ['*'], $page_name = 'page', $page = null)
+    {
+        if (!$per_page) {
+            $per_page = $this->input->getItemLimit('limit', 15, $this->min_items, $this->max_items);
+        }
+        return $this->query->paginate($per_page, $columns, $page_name, $page);
+    }
+
+    /**
+     * Get list of applicable filters
+     * @return array
+     */
+    public function filters()
+    {
+        $applicable_always = $this->always_apply;
+        $applicable_from_input = $this->input->all();
+        return array_merge($applicable_always, $applicable_from_input);
+    }
+
+    /**
+     * Set a variable available during process.
+     * @param $key
+     * @param $value
+     */
+    protected function pushVariable($key, $value)
+    {
+        $reserved = array_keys(get_object_vars($this));
+        if (in_array($key, $reserved)) {
+            throw new InvalidArgumentException('Cannot redeclare variable.');
+        }
+        $this->vars[$key] = $value;
+    }
+
+    /**
+     * Apply a single filter.
+     * @param string $name
+     * @param mixed $value
+     * @return void
+     */
+    protected function applyFilter($name, $value = null)
+    {
+        $method_name = $this->resolveFilterMethodName($name);
+        if ($this->methodIsApplicable($method_name)) {
+            $this->applyMethod($method_name, $value, $name);
+        }
+    }
+
+    /**
+     * Get handler method name.
+     * @param string $name
+     * @return string
+     */
+    protected function resolveFilterMethodName($name)
+    {
+        return 'apply' . str_replace(' ', '', ucwords(str_replace(['-', '_'], ' ', $name)));
+    }
+
+    /**
+     * Determine method is applicable.
+     * @param string $method
      * @return boolean
      */
-	protected function methodIsApplyable($method)
-	{
-		return method_exists($this, $method);
-	}
+    protected function methodIsApplicable(string $method)
+    {
+        return method_exists($this, $method);
+    }
 
+    /**
+     * Apply filter method.
+     * @param string $method
+     * @param mixed $value
+     * @param $real_key
+     * @return void
+     */
+    protected function applyMethod(string $method, $value, string $real_key)
+    {
+        // If the input like empty, we make a little silly cleanup.
+        $args = array_map(function ($i) {
+            return ($i === '') ? null : $i;
+        }, [$value]);
 
-	/**
-	 * Apply filter method.
-	 * @param  string $name  
-	 * @param  mixed $value 
-	 * @return void
-	 */
-	protected function applyMethod($method, $value, $real_key)
-	{
-		// If the input like empty, we make a little silly cleanup.
-		$args = array_map(function($i) {
-			return ($i === '') ? null : $i;
-		}, [$value]);
-		
-		// Append the real key to arguments when using non-named method.
-		$args[] = $real_key;
+        // Append the real key to arguments when using non-named method.
+        $args[] = $real_key;
 
-		$this->applyed[$real_key] = [
-			'method' => $method,
-			'value' => $value
-		];
-		
-		call_user_func_array([$this, $method], $args);
-	}
+        $this->applied[$real_key] = [
+            'method' => $method,
+            'value' => $value
+        ];
 
-
-	/**
-	 * Get handler method name
-	 * @param  string $name 
-	 * @return void
-	 */
-	protected function resolveFilterMethod($name)
-	{
-		return 'apply'.str_replace(' ', '', ucwords(str_replace(['-', '_'], ' ', $name)));
-	}
-
-
-	protected function pushVariable($key, $value)
-	{
-		$reserved = array_keys(get_object_vars($this));
-		if (in_array($key, $reserved)) {
-			throw new Exception('Cannot redeclare variable.');
-		}
-		$this->vars[$key] = $value;
-	}
+        call_user_func_array([$this, $method], $args);
+    }
 
     /**
      * Dynamically retrieve props.
-     * @param  string  $key
+     * @param string $key
      * @return mixed
      */
     public function __get($key)
     {
-    	if (isset($this->vars[$key])) {
-    		return $this->vars[$key];
-    	}
+        if (isset($this->vars[$key])) {
+            return $this->vars[$key];
+        }
+        return null;
     }
 }

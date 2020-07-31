@@ -4,8 +4,10 @@
     "type": "package",
     "require": {
         "php": "^7.2",
+        "illuminate/container": "^6.0",
         "illuminate/database": "^6.0",
-        "illuminate/container": "^6.0"
+        "illuminate/http": "^6.0",
+        "ext-json": "*"
     },
     "license": "MIT",
     "authors": [

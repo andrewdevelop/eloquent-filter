@@ -18,7 +18,6 @@ class Input implements IteratorAggregate, ArrayAccess, JsonSerializable
      */
     protected $input = [];
 
-
     /**
      * Create a new collection.
      * @param  mixed  $input
@@ -29,12 +28,11 @@ class Input implements IteratorAggregate, ArrayAccess, JsonSerializable
         if (is_array($input)) {
             $this->input = $input;
         } elseif ($input instanceof Request) {
-            $this->input = $input->all();
+            $this->input = $input->toArray();
         } else {
             $this->input = (array) $input;
         }
     }
-
 
     /**
      * Determine if an item exists in the collection by key.
@@ -50,7 +48,6 @@ class Input implements IteratorAggregate, ArrayAccess, JsonSerializable
         return true;
     }
 
-
     /**
      * Get an item from the collection by key.
      * @param  mixed  $key
@@ -62,10 +59,8 @@ class Input implements IteratorAggregate, ArrayAccess, JsonSerializable
         if ($this->offsetExists($key)) {
             return $this->input[$key];
         }
-
         return $default instanceof Closure ? $default() : $default;
-    }   
-
+    }
 
     /**
      * Get range.
@@ -92,7 +87,6 @@ class Input implements IteratorAggregate, ArrayAccess, JsonSerializable
         return $output;
     }
 
-
     /**
      * Input with no value
      * @param  mixed  $key 
@@ -105,7 +99,6 @@ class Input implements IteratorAggregate, ArrayAccess, JsonSerializable
         if ($value === null) return true;
         return false;
     }
-
 
     /**
      * Determine that input value is like true
@@ -122,7 +115,6 @@ class Input implements IteratorAggregate, ArrayAccess, JsonSerializable
         return false;
     }
 
-
     /**
      * Determine that input value is like false
      * @param  mixed  $key 
@@ -138,7 +130,6 @@ class Input implements IteratorAggregate, ArrayAccess, JsonSerializable
         return false;
     }
 
-
     /**
      * Get sorting column.
      * @param  string $key     
@@ -150,7 +141,6 @@ class Input implements IteratorAggregate, ArrayAccess, JsonSerializable
         $ordering = $this->get($key, $default);
         return $ordering;
     }
-
 
     /**
      * Get sorting direction.
@@ -168,7 +158,6 @@ class Input implements IteratorAggregate, ArrayAccess, JsonSerializable
         }
     }
 
-    
     /**
      * Get pagination items per page.
      * @param  string  $key       
@@ -184,16 +173,14 @@ class Input implements IteratorAggregate, ArrayAccess, JsonSerializable
         return $per_page;
     }
 
-
     /**
      * Get the keys of the collection input.
-     * @return static
+     * @return array
      */
     public function keys()
     {
         return array_keys($this->input);
     }
-
 
     /**
      * Get all of the items in the collection.
@@ -203,7 +190,6 @@ class Input implements IteratorAggregate, ArrayAccess, JsonSerializable
     {
         return $this->input;
     }
-
 
     /**
      * Determine if an item exists at an offset.
@@ -215,7 +201,6 @@ class Input implements IteratorAggregate, ArrayAccess, JsonSerializable
         return array_key_exists($key, $this->input);
     }
 
-
     /**
      * Get an item at a given offset.
      * @param  mixed  $key
@@ -225,7 +210,6 @@ class Input implements IteratorAggregate, ArrayAccess, JsonSerializable
     {
         return $this->input[$key];
     }
-
 
     /**
      * Set the item at a given offset.
@@ -242,7 +226,6 @@ class Input implements IteratorAggregate, ArrayAccess, JsonSerializable
         }
     }
 
-
     /**
      * Unset the item at a given offset.
      * @param  string  $key
@@ -253,16 +236,14 @@ class Input implements IteratorAggregate, ArrayAccess, JsonSerializable
         unset($this->input[$key]);
     } 
 
-
     /**
      * Get an iterator for the input.
-     * @return \ArrayIterator
+     * @return ArrayIterator
      */
     public function getIterator()
     {
         return new ArrayIterator($this->input);
     }
-
 
     /**
      * Serializes the input to a value that can be serialized natively by json_encode(). 
